@@ -6,6 +6,8 @@ A simple graphical game in Java where the user controls a snake trying to eat nu
 - Binary numbers are displayed on yellow targets (showing both binary and decimal representations)
 - Snake grows each time it eats a binary number
 - Score tracking
+- Selectable snake speed with 5 levels (keys 1-5)
+- Target label pulse animation when a new target spawns
 - Game over detection (collision with walls or self)
 - Restart functionality
 
@@ -22,6 +24,7 @@ A simple graphical game in Java where the user controls a snake trying to eat nu
 
 3. **Controls:**
    - Arrow Keys: Control snake direction (Up, Down, Left, Right)
+   - 1-5: Set snake speed level (1 = slowest, 5 = fastest)
    - Space: Restart game after game over
 
 ## Game Rules

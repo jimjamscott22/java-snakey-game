@@ -1,9 +1,10 @@
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Toolkit;
+import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -18,7 +19,9 @@ public class GamePanel extends JPanel implements ActionListener {
     private final int WIDTH = 600;
     private final int HEIGHT = 600;
     private final int UNIT_SIZE = 20;
-    private final int DELAY = 100;
+    private final int[] SPEED_DELAYS = {160, 130, 100, 80, 60};
+    private final int DEFAULT_SPEED_LEVEL = 3;
+    private final int TARGET_PULSE_FRAMES = 10;
     
     private ArrayList<Integer> snakeX = new ArrayList<>();
     private ArrayList<Integer> snakeY = new ArrayList<>();
@@ -27,12 +30,15 @@ public class GamePanel extends JPanel implements ActionListener {
     private int targetX;
     private int targetY;
     private String binaryNumber;
+    private int targetDecimal;
+    private int targetPulseFrames = 0;
     
     private char direction = 'R';
     private boolean running = false;
     private Timer timer;
     private Random random;
     private int score = 0;
+    private int speedLevel = DEFAULT_SPEED_LEVEL;
 
     public GamePanel() {
         random = new Random();
@@ -44,6 +50,10 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public void startGame() {
+        if (timer != null) {
+            timer.stop();
+        }
+
         snakeX.clear();
         snakeY.clear();
         bodyParts = 3;
@@ -58,7 +68,7 @@ public class GamePanel extends JPanel implements ActionListener {
         
         newBinaryTarget();
         running = true;
-        timer = new Timer(DELAY, this);
+        timer = new Timer(getCurrentDelay(), this);
         timer.start();
     }
 
@@ -76,15 +86,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 g.drawLine(0, i * UNIT_SIZE, WIDTH, i * UNIT_SIZE);
             }
             
-            // Draw binary number target
-            g.setColor(Color.YELLOW);
-            g.fillRect(targetX, targetY, UNIT_SIZE, UNIT_SIZE);
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 12));
-            FontMetrics metrics = getFontMetrics(g.getFont());
-            g.drawString(binaryNumber, 
-                targetX + (UNIT_SIZE - metrics.stringWidth(binaryNumber)) / 2,
-                targetY + ((UNIT_SIZE - metrics.getHeight()) / 2) + metrics.getAscent());
+            drawTarget(g);
             
             // Draw snake
             for (int i = 0; i < bodyParts; i++) {
@@ -100,7 +102,8 @@ public class GamePanel extends JPanel implements ActionListener {
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 20));
             g.drawString("Score: " + score, 10, 30);
-            g.drawString("Binary Target: " + binaryNumber + " (" + Integer.parseInt(binaryNumber, 2) + ")", 10, 55);
+            g.drawString("Binary Target: " + binaryNumber + " (" + targetDecimal + ")", 10, 55);
+            g.drawString("Speed: " + speedLevel + " (1-5)", 10, 80);
         } else {
             gameOver(g);
         }
@@ -109,11 +112,96 @@ public class GamePanel extends JPanel implements ActionListener {
     public void newBinaryTarget() {
         // Generate random binary number (4-8 bits)
         int numBits = random.nextInt(5) + 4; // 4 to 8 bits
-        int decimal = random.nextInt((int) Math.pow(2, numBits));
-        binaryNumber = Integer.toBinaryString(decimal);
-        
-        targetX = random.nextInt((int) (WIDTH / UNIT_SIZE)) * UNIT_SIZE;
-        targetY = random.nextInt((int) (HEIGHT / UNIT_SIZE)) * UNIT_SIZE;
+        targetDecimal = random.nextInt(1 << numBits);
+        binaryNumber = String.format("%" + numBits + "s", Integer.toBinaryString(targetDecimal)).replace(' ', '0');
+
+        do {
+            targetX = random.nextInt(WIDTH / UNIT_SIZE) * UNIT_SIZE;
+            targetY = random.nextInt(HEIGHT / UNIT_SIZE) * UNIT_SIZE;
+        } while (isOnSnake(targetX, targetY));
+
+        targetPulseFrames = TARGET_PULSE_FRAMES;
+    }
+
+    private boolean isOnSnake(int x, int y) {
+        for (int i = 0; i < bodyParts; i++) {
+            if (snakeX.get(i) == x && snakeY.get(i) == y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void drawTarget(Graphics g) {
+        // Keep the grid cell as the pickup and render readable text beside it.
+        g.setColor(Color.YELLOW);
+        g.fillRect(targetX, targetY, UNIT_SIZE, UNIT_SIZE);
+        g.setColor(Color.BLACK);
+        g.fillOval(targetX + 6, targetY + 6, 8, 8);
+
+        String label = binaryNumber + " (" + targetDecimal + ")";
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        FontMetrics metrics = getFontMetrics(g.getFont());
+        int padding = 6;
+        int labelWidth = metrics.stringWidth(label) + (padding * 2);
+        int labelHeight = metrics.getHeight() + (padding * 2);
+
+        int labelX = targetX + UNIT_SIZE + 6;
+        int labelY = targetY - labelHeight - 4;
+
+        if (labelX + labelWidth > WIDTH) {
+            labelX = targetX - labelWidth - 6;
+        }
+        if (labelX < 0) {
+            labelX = 0;
+        }
+        if (labelY < 0) {
+            labelY = targetY + UNIT_SIZE + 4;
+        }
+        if (labelY + labelHeight > HEIGHT) {
+            labelY = HEIGHT - labelHeight;
+        }
+
+        if (targetPulseFrames > 0) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            float progress = (float) targetPulseFrames / TARGET_PULSE_FRAMES;
+            int pulsePadding = 2 + (int) ((1.0f - progress) * 12.0f);
+            float alpha = 0.08f + (0.30f * progress);
+
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2.setColor(Color.YELLOW);
+            g2.fillRoundRect(
+                labelX - pulsePadding,
+                labelY - pulsePadding,
+                labelWidth + pulsePadding * 2,
+                labelHeight + pulsePadding * 2,
+                12,
+                12
+            );
+            g2.dispose();
+        }
+
+        g.setColor(Color.YELLOW);
+        g.fillRoundRect(labelX, labelY, labelWidth, labelHeight, 8, 8);
+        g.setColor(Color.BLACK);
+        g.drawRoundRect(labelX, labelY, labelWidth, labelHeight, 8, 8);
+        g.drawString(label, labelX + padding, labelY + padding + metrics.getAscent());
+    }
+
+    private int getCurrentDelay() {
+        return SPEED_DELAYS[speedLevel - 1];
+    }
+
+    private void setSpeedLevel(int newSpeedLevel) {
+        if (newSpeedLevel < 1 || newSpeedLevel > 5) {
+            return;
+        }
+        speedLevel = newSpeedLevel;
+        if (timer != null) {
+            int delay = getCurrentDelay();
+            timer.setDelay(delay);
+            timer.setInitialDelay(delay);
+        }
     }
 
     public void move() {
@@ -186,6 +274,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setFont(new Font("Arial", Font.PLAIN, 20));
         FontMetrics metrics3 = getFontMetrics(g.getFont());
         g.drawString("Press SPACE to restart", (WIDTH - metrics3.stringWidth("Press SPACE to restart")) / 2, HEIGHT / 2 + 100);
+        g.drawString("Press 1-5 to set speed (current: " + speedLevel + ")", (WIDTH - metrics3.stringWidth("Press 1-5 to set speed (current: " + speedLevel + ")")) / 2, HEIGHT / 2 + 130);
     }
 
     @Override
@@ -194,6 +283,9 @@ public class GamePanel extends JPanel implements ActionListener {
             move();
             checkTarget();
             checkCollisions();
+        }
+        if (targetPulseFrames > 0) {
+            targetPulseFrames--;
         }
         repaint();
     }
@@ -226,6 +318,26 @@ public class GamePanel extends JPanel implements ActionListener {
                     if (!running) {
                         startGame();
                     }
+                    break;
+                case KeyEvent.VK_1:
+                case KeyEvent.VK_NUMPAD1:
+                    setSpeedLevel(1);
+                    break;
+                case KeyEvent.VK_2:
+                case KeyEvent.VK_NUMPAD2:
+                    setSpeedLevel(2);
+                    break;
+                case KeyEvent.VK_3:
+                case KeyEvent.VK_NUMPAD3:
+                    setSpeedLevel(3);
+                    break;
+                case KeyEvent.VK_4:
+                case KeyEvent.VK_NUMPAD4:
+                    setSpeedLevel(4);
+                    break;
+                case KeyEvent.VK_5:
+                case KeyEvent.VK_NUMPAD5:
+                    setSpeedLevel(5);
                     break;
             }
         }

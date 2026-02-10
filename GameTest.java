@@ -10,8 +10,8 @@ public class GameTest {
         java.util.Random random = new java.util.Random();
         for (int i = 0; i < 5; i++) {
             int numBits = random.nextInt(5) + 4; // 4 to 8 bits
-            int decimal = random.nextInt((int) Math.pow(2, numBits));
-            String binary = Integer.toBinaryString(decimal);
+            int decimal = random.nextInt(1 << numBits);
+            String binary = String.format("%" + numBits + "s", Integer.toBinaryString(decimal)).replace(' ', '0');
             System.out.println("   Binary: " + binary + " = Decimal: " + decimal + " (" + binary.length() + " bits)");
         }
         
