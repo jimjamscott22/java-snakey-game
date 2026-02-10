@@ -18,7 +18,6 @@ public class GamePanel extends JPanel implements ActionListener {
     private final int WIDTH = 600;
     private final int HEIGHT = 600;
     private final int UNIT_SIZE = 20;
-    private final int GAME_UNITS = (WIDTH * HEIGHT) / (UNIT_SIZE * UNIT_SIZE);
     private final int DELAY = 100;
     
     private ArrayList<Integer> snakeX = new ArrayList<>();
