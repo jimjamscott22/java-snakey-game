@@ -111,12 +111,12 @@ public class GamePanel extends JPanel implements ActionListener {
             if (paused) {
                 g.setColor(Color.YELLOW);
                 g.setFont(new Font("Arial", Font.BOLD, 40));
-                FontMetrics metrics = getFontMetrics(g.getFont());
-                g.drawString("PAUSED", (WIDTH - metrics.stringWidth("PAUSED")) / 2, HEIGHT / 2);
+                FontMetrics pausedMetrics = getFontMetrics(g.getFont());
+                g.drawString("PAUSED", (WIDTH - pausedMetrics.stringWidth("PAUSED")) / 2, HEIGHT / 2);
                 
                 g.setFont(new Font("Arial", Font.PLAIN, 20));
-                FontMetrics metrics2 = getFontMetrics(g.getFont());
-                g.drawString("Press P to resume", (WIDTH - metrics2.stringWidth("Press P to resume")) / 2, HEIGHT / 2 + 40);
+                FontMetrics instructionMetrics = getFontMetrics(g.getFont());
+                g.drawString("Press P to resume", (WIDTH - instructionMetrics.stringWidth("Press P to resume")) / 2, HEIGHT / 2 + 40);
             }
         } else {
             gameOver(g);
