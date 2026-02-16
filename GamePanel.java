@@ -35,6 +35,7 @@ public class GamePanel extends JPanel implements ActionListener {
     
     private char direction = 'R';
     private boolean running = false;
+    private boolean paused = false;
     private Timer timer;
     private Random random;
     private int score = 0;
@@ -68,6 +69,7 @@ public class GamePanel extends JPanel implements ActionListener {
         
         newBinaryTarget();
         running = true;
+        paused = false;
         timer = new Timer(getCurrentDelay(), this);
         timer.start();
     }
@@ -104,6 +106,18 @@ public class GamePanel extends JPanel implements ActionListener {
             g.drawString("Score: " + score, 10, 30);
             g.drawString("Binary Target: " + binaryNumber + " (" + targetDecimal + ")", 10, 55);
             g.drawString("Speed: " + speedLevel + " (1-5)", 10, 80);
+            
+            // Draw pause status
+            if (paused) {
+                g.setColor(Color.YELLOW);
+                g.setFont(new Font("Arial", Font.BOLD, 40));
+                FontMetrics pausedMetrics = getFontMetrics(g.getFont());
+                g.drawString("PAUSED", (WIDTH - pausedMetrics.stringWidth("PAUSED")) / 2, HEIGHT / 2);
+                
+                g.setFont(new Font("Arial", Font.PLAIN, 20));
+                FontMetrics instructionMetrics = getFontMetrics(g.getFont());
+                g.drawString("Press P to resume", (WIDTH - instructionMetrics.stringWidth("Press P to resume")) / 2, HEIGHT / 2 + 40);
+            }
         } else {
             gameOver(g);
         }
@@ -274,17 +288,18 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setFont(new Font("Arial", Font.PLAIN, 20));
         FontMetrics metrics3 = getFontMetrics(g.getFont());
         g.drawString("Press SPACE to restart", (WIDTH - metrics3.stringWidth("Press SPACE to restart")) / 2, HEIGHT / 2 + 100);
-        g.drawString("Press 1-5 to set speed (current: " + speedLevel + ")", (WIDTH - metrics3.stringWidth("Press 1-5 to set speed (current: " + speedLevel + ")")) / 2, HEIGHT / 2 + 130);
+        g.drawString("Press P to pause during game", (WIDTH - metrics3.stringWidth("Press P to pause during game")) / 2, HEIGHT / 2 + 130);
+        g.drawString("Press 1-5 to set speed (current: " + speedLevel + ")", (WIDTH - metrics3.stringWidth("Press 1-5 to set speed (current: " + speedLevel + ")")) / 2, HEIGHT / 2 + 160);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (running) {
+        if (running && !paused) {
             move();
             checkTarget();
             checkCollisions();
         }
-        if (targetPulseFrames > 0) {
+        if (targetPulseFrames > 0 && !paused) {
             targetPulseFrames--;
         }
         repaint();
@@ -317,6 +332,11 @@ public class GamePanel extends JPanel implements ActionListener {
                 case KeyEvent.VK_SPACE:
                     if (!running) {
                         startGame();
+                    }
+                    break;
+                case KeyEvent.VK_P:
+                    if (running) {
+                        paused = !paused;
                     }
                     break;
                 case KeyEvent.VK_1:

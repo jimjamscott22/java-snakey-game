@@ -55,6 +55,25 @@ public class GameTest {
         boolean targetHit = (headX == targetX && headY == targetY);
         System.out.println("   Target hit: " + targetHit);
         
+        // Test 6: Pause state logic
+        System.out.println("\n6. Testing pause functionality:");
+        boolean running = true;
+        boolean paused = false;
+        System.out.println("   Game running: " + running + ", Paused: " + paused);
+        
+        // Simulate pause toggle
+        paused = !paused;
+        System.out.println("   After pause toggle: Paused: " + paused);
+        
+        // Check if game should process moves (running && !paused)
+        boolean shouldMove = (running && !paused);
+        System.out.println("   Should process moves: " + shouldMove);
+        
+        // Unpause
+        paused = !paused;
+        shouldMove = (running && !paused);
+        System.out.println("   After unpause, should process moves: " + shouldMove);
+        
         System.out.println("\n✓ All basic tests passed!");
         System.out.println("\nTo run the actual game, execute: java SnakeGame");
     }
