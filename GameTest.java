@@ -56,7 +56,7 @@ public class GameTest {
         System.out.println("   Target hit: " + targetHit);
         
         // Test 6: Pause state logic
-        System.out.println("\n5. Testing pause functionality:");
+        System.out.println("\n6. Testing pause functionality:");
         boolean running = true;
         boolean paused = false;
         System.out.println("   Game running: " + running + ", Paused: " + paused);
